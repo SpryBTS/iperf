@@ -287,6 +287,7 @@ iperf_handle_message_client(struct iperf_test *test)
 	     */
 	    signed char oldstate = test->state;
 	    cpu_util(test->cpu_util);
+	    net_if_util(-1, test->net_if_util);  /* End network i/f utilization counters */
 	    test->state = DISPLAY_RESULTS;
 	    test->reporter_callback(test);
 	    test->state = oldstate;
@@ -471,6 +472,7 @@ iperf_run_client(struct iperf_test * test)
     /* Begin calculating CPU utilization */
     cpu_util(NULL);
 
+    /* TODO: Somewhere below, initialize net_if_perf() - TODO */
     startup = 1;
     while (test->state != IPERF_DONE) {
 	memcpy(&read_set, &test->read_set, sizeof(fd_set));
@@ -535,6 +537,7 @@ iperf_run_client(struct iperf_test * test)
 		/* Yes, done!  Send TEST_END. */
 		test->done = 1;
 		cpu_util(test->cpu_util);
+		net_if_util(-1, test->net_if_util);  /* Network i/f utilization - update deltas */
 		test->stats_callback(test);
 		if (iperf_set_send_state(test, TEST_END) != 0)
 		    return -1;

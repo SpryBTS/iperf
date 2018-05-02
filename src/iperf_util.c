@@ -186,6 +186,136 @@ timeval_diff(struct timeval * tv0, struct timeval * tv1)
     return time1;
 }
 
+
+void
+net_if_util(int sock_fd, unsigned long pnet[5])
+{
+    static char *ifname;
+    static unsigned long baseline[5];
+
+    struct timeval t_now;
+
+    /* Find i/f name - ref: https://stackoverflow.com/questions/848040 */
+    struct sockaddr_in addr;
+    struct ifaddrs *ifaddr;
+    struct ifaddrs *ifa;
+    socklen_t addr_len;
+
+    /* TODO - get this into an include file - TODO */
+    int num_net_paths = 5;
+    char *net_paths[num_net_paths];
+    net_paths[0] = "duration";
+    net_paths[1] = "rx_bytes";
+    net_paths[2] = "rx_packets";
+    net_paths[3] = "tx_bytes";
+    net_paths[4] = "tx_packets";
+
+    if ((ifname == NULL) && (sock_fd >= 0)) {  /* static i/f name for an open socket */
+        addr_len = sizeof(addr);
+	getsockname(sock_fd, (struct sockaddr *)&addr, &addr_len);
+	getifaddrs(&ifaddr);
+
+	for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
+	    if ((ifa->ifa_addr != NULL) && (AF_INET == ifa->ifa_addr->sa_family)) {
+	        struct sockaddr_in *inaddr = (struct sockaddr_in *)ifa->ifa_addr;
+		if (
+		        (addr.sin_addr != NULL) &&
+		        (inaddr != NULL) &&
+		        (inaddr.sin_addr != NULL) &&
+		        (inaddr->sin_addr.s_addr == addr.sin_addr.s_addr)
+		    ) {
+		    if (ifa->ifa_name) {
+		        /* FOUND! */
+			int ifname_len;
+			ifname_len = strlen(ifa->ifa_name);
+			if (ifname_len > 255) ifname_len = 255;
+			ifname = (char *)malloc(ifname_len+1);
+			strncpy(ifname, ifa->ifa_name, ifname_len);
+			ifname[ifname_len] = (char)0;
+		    }
+		}
+	    }
+	}
+	freeifaddrs(ifaddr);
+    }
+
+    /*
+     * /proc/sys/net/ipv4/conf/net/<ifname>/...
+     * /sys/class/net/<ifname> -> ../devices/.../net/<ifname>
+     * /sys/class/net/<ifname>/statistics/{rx_bytes,rx_packets,tx_bytes,tx_packets}
+     */
+
+    if ((ifname != NULL) && (strlen(ifname) > 0)) {
+	int net_fd;
+	int net_pass;
+
+	int net_fullpathsize = 256;
+    	char net_fullpath[net_fullpathsize];
+
+	int net_buflen;
+	int net_bufsize = 32;
+	char net_buf[net_bufsize];
+
+	unsigned long snapshot[num_net_paths];
+	unsigned long ss;
+
+	/* Get snapshot of current state */
+	gettimeofday(&t_now, NULL);
+	for (net_pass = 0; net_pass < num_net_paths; net_pass++) {
+	    snapshot[net_pass] = 0;
+	    if (!strcmp(net_paths[net_pass], "duration")) {
+	    	snapshot[net_pass] = t_now.tv_sec * 1000000 + t_now.tv_usec;
+	    } else {
+		if ((snapshot[0] - baseline[0]) > 1000000) {
+		    /* Only first time through, or more than 1s later */
+		    /* Allows multiple streams without redundant interface interrogation */
+		    net_buflen = 0;
+		    snprintf(net_fullpath, net_fullpathsize, "/sys/class/net/%s/statistics/%s", ifname, net_paths[net_pass]);
+		    if ((net_fd = open(net_fullpath, O_RDONLY)) >= 0) {
+			net_buflen = read(net_fd, net_buf, net_bufsize);
+			close(net_fd);
+		    }
+		    if (net_buflen > 0) {
+			ss = 0;
+			for (int i = 0; (i < net_buflen) && (net_buf[i] >= '0') && (net_buf[i] <= '9'); i++) {
+			    ss = ss * 10 + net_buf[i] - '0';
+			}
+			snapshot[net_pass] = ss;
+		    }
+		}
+	    }
+	}
+
+	if (baseline[0] <= 0) { /* Timestamp */
+	    /* Lock away start baseline first time through */
+	    for (net_pass = 0; net_pass < num_net_paths; net_pass++) {
+		pnet[net_pass] = 0;
+		baseline[net_pass] = snapshot[net_pass];
+	    }
+	} else {
+	    if ((snapshot[0] - baseline[0]) > 1000000) {
+		/* Update deltas if this is more than 1s after baseline */
+		for (net_pass = 0; net_pass < num_net_paths; net_pass++) {
+		    if (snapshot[net_pass] >= baseline[net_pass]) {
+			pnet[net_pass] = snapshot[net_pass] - baseline[net_pass];
+		    } else {
+			/* Counter rollover estimation */
+			unsigned long net_rollover;
+			for (net_rollover = 2^31; net_rollover >= baseline[net_pass]; net_rollover += net_rollover)
+			    ;
+			if ((net_rollover / 2) > baseline[net_pass]) {
+			    pnet[net_pass] = 0; /* Ignore unreliable counter */
+			} else {
+			    pnet[net_pass] = net_rollover - baseline[net_pass] + snapshot[net_pass];
+			}
+		    }
+		}
+	    }
+	}
+    }
+}
+
+
 void
 cpu_util(double pcpu[3])
 {

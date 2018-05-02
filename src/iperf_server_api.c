@@ -176,6 +176,7 @@ iperf_handle_message_server(struct iperf_test *test)
         case TEST_END:
 	    test->done = 1;
             cpu_util(test->cpu_util);
+	    net_if_util(-1, test->net_if_util);  /* End network i/f utilization counters */
             test->stats_callback(test);
             SLIST_FOREACH(sp, &test->streams, streams) {
                 FD_CLR(sp->socket, &test->read_set);
@@ -201,6 +202,7 @@ iperf_handle_message_server(struct iperf_test *test)
 	    // ending summary statistics.
 	    signed char oldstate = test->state;
 	    cpu_util(test->cpu_util);
+	    net_if_util(-1, test->net_if_util);  /* End network i/f utilization counters */
 	    test->state = DISPLAY_RESULTS;
 	    test->reporter_callback(test);
 	    test->state = oldstate;
@@ -508,6 +510,7 @@ iperf_run_server(struct iperf_test *test)
 #endif /* HAVE_TCP_CONGESTION */
 
                     if (!is_closed(s)) {
+			net_if_util(s, test->net_if_util);  /* Network i/f utilization - initialize */
                         sp = iperf_new_stream(test, s);
                         if (!sp) {
 			    cleanup_server(test);
