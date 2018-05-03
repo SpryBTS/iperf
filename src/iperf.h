@@ -67,6 +67,11 @@
 #include <openssl/evp.h>
 #endif // HAVE_SSL
 
+#ifndef NUM_NET_STATS
+#define NUM_NET_STATS 5
+#endif
+static char *net_stats_label[NUM_NET_STATS];
+
 typedef uint64_t iperf_size_t;
 
 struct iperf_interval_results
@@ -309,8 +314,8 @@ struct iperf_test
     double cpu_util[3];                            /* cpu utilization of the test - total, user, system */
     double remote_cpu_util[3];                     /* cpu utilization for the remote host/client - total, user, system */
 
-    unsigned long net_if_util[5];                  /* network interface utilization of the test - duration (usec), rx_bytes, rx_packets, tx_bytes, tx_packets */
-    unsigned long remote_net_if_util[5];           /* network interface utilization for the remote host/client - duration (usec), rx_bytes, rx_packets, tx_bytes, tx_packets */
+    int64_t net_if_util[NUM_NET_STATS];         /* network interface utilization of the test - duration (usec), rx_bytes, rx_packets, tx_bytes, tx_packets */
+    int64_t remote_net_if_util[NUM_NET_STATS];  /* network interface utilization for the remote host/client */
 
     int       num_streams;                      /* total streams in the test (-P) */
 

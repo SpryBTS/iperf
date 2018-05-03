@@ -46,7 +46,10 @@ int timeval_equals(struct timeval *tv0, struct timeval *tv1);
 
 double timeval_diff(struct timeval *tv0, struct timeval *tv1);
 
-void net_if_util(int sock_fd, unsigned long pnet[5]); /* Network i/f metrics */
+#ifndef NUM_NET_STATS
+#define NUM_NET_STATS 5
+#endif
+void net_if_util(int sock_fd, int64_t pnet[NUM_NET_STATS]); /* Network i/f metrics */
 
 void cpu_util(double pcpu[3]);
 

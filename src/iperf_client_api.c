@@ -471,8 +471,8 @@ iperf_run_client(struct iperf_test * test)
 
     /* Begin calculating CPU utilization */
     cpu_util(NULL);
+    net_if_util(test->ctrl_sck, test->net_if_util);  /* Initialize net i/f utilization counters on control socket */
 
-    /* TODO: Somewhere below, initialize net_if_perf() - TODO */
     startup = 1;
     while (test->state != IPERF_DONE) {
 	memcpy(&read_set, &test->read_set, sizeof(fd_set));
