@@ -91,6 +91,7 @@ extern const char server_reporting[] ;
 extern const char reportCSV_peer[] ;
 
 extern const char report_cpu[] ;
+extern const char report_net_if[] ;
 extern const char report_local[] ;
 extern const char report_remote[] ;
 extern const char report_sender[] ;

@@ -49,6 +49,9 @@
 #include "cjson.h"
 #include "iperf.h"
 #include "iperf_api.h"
+#include <math.h>
+#include <ifaddrs.h>
+#include <netinet/in.h>
 
 /*
  * Read entropy from /dev/urandom
@@ -212,15 +215,15 @@ net_if_util(int sock_fd, int64_t pnet[NUM_NET_STATS])
     if ((ifname == NULL) && (sock_fd >= 0)) {  /* static i/f name for an open socket */
         addr_len = sizeof(addr);
 	getsockname(sock_fd, (struct sockaddr *)&addr, &addr_len);
-	getifaddrs(&ifaddr);
+	(void)getifaddrs(&ifaddr);
 
 	for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
 	    if ((ifa->ifa_addr != NULL) && (AF_INET == ifa->ifa_addr->sa_family)) {
 	        struct sockaddr_in *inaddr = (struct sockaddr_in *)ifa->ifa_addr;
 		if (
-		        (addr.sin_addr != NULL) &&
+		        (&(addr.sin_addr) != (struct in_addr *)NULL) &&
 		        (inaddr != NULL) &&
-		        (inaddr.sin_addr != NULL) &&
+		        (&(inaddr->sin_addr) != (struct in_addr *)NULL) &&
 		        (inaddr->sin_addr.s_addr == addr.sin_addr.s_addr)
 		    ) {
 		    if (ifa->ifa_name) {
@@ -301,7 +304,7 @@ net_if_util(int sock_fd, int64_t pnet[NUM_NET_STATS])
 		    } else {
 			/* Counter rollover estimation */
 			int64_t net_rollover;
-			for (net_rollover = 2^31; net_rollover >= baseline[net_pass]; net_rollover += net_rollover)
+			for (net_rollover = pow(2,31); net_rollover >= baseline[net_pass]; net_rollover += net_rollover)
 			    ;
 			if ((net_rollover / 2) > baseline[net_pass]) {
 			    pnet[net_pass] = 0; /* Ignore unreliable (reset? overlapped?) counter */
