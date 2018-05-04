@@ -202,9 +202,17 @@ net_if_util(int sock_fd, int64_t pnet[NUM_NET_STATS])
 	getsockname(sock_fd, (struct sockaddr *)&addr, &addr_len);
 	(void)getifaddrs(&ifaddr);
 
+if (&(addr.sin_addr) != (struct in_addr *)NULL) {
+    printf("DEBUG: addr.sin_addr.s_addr = 0x%x\n", addr.sin_addr.s_addr);
+}
+
 	for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
 	    if ((ifa->ifa_addr != NULL) && (AF_INET == ifa->ifa_addr->sa_family)) {
 	        struct sockaddr_in *inaddr = (struct sockaddr_in *)ifa->ifa_addr;
+
+if ((inaddr != NULL) && (&(inaddr->sin_addr) != (struct in_addr *)NULL)) {
+    printf("DEBUG: inaddr->sin_addr.s_addr = 0x%x\n", inaddr->sin_addr.s_addr);
+}
 		if (
 		        (&(addr.sin_addr) != (struct in_addr *)NULL) &&
 		        (inaddr != NULL) &&
