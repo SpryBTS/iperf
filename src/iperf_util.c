@@ -45,6 +45,14 @@
 #include "config.h"
 #include "cjson.h"
 
+#define NUM_NET_STATS 5
+char *net_stats_label[] = {"duration", "rx_bytes", "rx_packets", "tx_bytes", "tx_packets"};
+
+#include <fcntl.h>
+#include <math.h>
+#include <ifaddrs.h>
+#include <netinet/in.h>
+
 /* make_cookie
  *
  * Generate and return a cookie string
@@ -172,6 +180,145 @@ delay(int us)
     return 1;
 }
 #endif
+
+
+
+void
+net_if_util(int sock_fd, int64_t pnet[NUM_NET_STATS])
+{
+    static char *ifname;
+    static int64_t baseline[NUM_NET_STATS];
+
+    struct timeval t_now;
+
+    /* Find i/f name - ref: https://stackoverflow.com/questions/848040 */
+    struct sockaddr_in addr;
+    struct ifaddrs *ifaddr;
+    struct ifaddrs *ifa;
+    socklen_t addr_len;
+
+    if (sock_fd >= 0) {  /* static i/f name for an open socket */
+        addr_len = sizeof(addr);
+	getsockname(sock_fd, (struct sockaddr *)&addr, &addr_len);
+	(void)getifaddrs(&ifaddr);
+
+	for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
+	    if ((ifa->ifa_addr != NULL) && (AF_INET == ifa->ifa_addr->sa_family)) {
+	        struct sockaddr_in *inaddr = (struct sockaddr_in *)ifa->ifa_addr;
+		if (
+		        (&(addr.sin_addr) != (struct in_addr *)NULL) &&
+		        (inaddr != NULL) &&
+		        (&(inaddr->sin_addr) != (struct in_addr *)NULL) &&
+		        (inaddr->sin_addr.s_addr == addr.sin_addr.s_addr)
+		    ) {
+		    if (ifa->ifa_name) {
+		        /* FOUND! */
+			int ifname_len;
+			ifname_len = strlen(ifa->ifa_name);
+			if (ifname_len > 255) ifname_len = 255;
+			ifname = (char *)malloc(ifname_len+1);
+			strncpy(ifname, ifa->ifa_name, ifname_len);
+			ifname[ifname_len] = (char)0;
+		    }
+		}
+	    }
+	}
+	freeifaddrs(ifaddr);
+    }
+
+    /*
+     * /proc/sys/net/ipv4/conf/net/<ifname>/...
+     * /sys/class/net/<ifname> -> ../devices/.../net/<ifname>
+     * /sys/class/net/<ifname>/statistics/{rx_bytes,rx_packets,tx_bytes,tx_packets}
+     */
+
+    if ((ifname != NULL) && (strlen(ifname) > 0)) {
+	int i;
+	int net_fd;
+	int net_pass;
+
+	int net_fullpathsize = 256;
+    	char net_fullpath[net_fullpathsize];
+
+	int net_buflen;
+	int net_bufsize = 32;
+	char net_buf[net_bufsize];
+
+	int64_t snapshot[NUM_NET_STATS];
+	int64_t ss;
+
+	/* Get snapshot of current state */
+	gettimeofday(&t_now, NULL);
+	for (net_pass = 0; net_pass < NUM_NET_STATS; net_pass++) {
+	    snapshot[net_pass] = 0;
+	    if (!strcmp(net_stats_label[net_pass], "duration")) {
+	    	snapshot[net_pass] = t_now.tv_sec * 1000000L + t_now.tv_usec;
+	    } else {
+		if ((snapshot[0] - baseline[0]) > 1000000L) {
+		    /* Only first time through, or more than 1s later */
+		    /* Allows multiple streams without redundant interface interrogation */
+		    net_buflen = 0;
+		    memset(net_fullpath, 0, net_fullpathsize);
+		    snprintf(net_fullpath, net_fullpathsize, "/sys/class/net/%s/statistics/%s", ifname, net_stats_label[net_pass]);
+printf("DEBUG: opening %s\n", net_fullpath);
+		    if ((net_fd = open(net_fullpath, O_RDONLY)) >= 0) {
+			net_buflen = read(net_fd, net_buf, net_bufsize);
+			close(net_fd);
+		    }
+		    if (net_buflen > 0) {
+printf("DEBUG: read '%*.*s'\n", net_buflen-1, net_buflen-1, net_buf);
+			ss = 0;
+			for (i = 0; (i < net_buflen) && (net_buf[i] >= '0') && (net_buf[i] <= '9'); i++) {
+			    ss = ss * 10 + net_buf[i] - '0';
+			}
+			snapshot[net_pass] = ss;
+printf("DEBUG: snapshot[%s] = %lld\n", net_stats_label[net_pass], snapshot[net_pass]);
+		    }
+		}
+	    }
+	}
+
+	if (baseline[0] <= 0) { /* Timestamp */
+	    /* Lock away start baseline first time through */
+	    for (net_pass = 0; net_pass < NUM_NET_STATS; net_pass++) {
+		pnet[net_pass] = 0;
+		baseline[net_pass] = snapshot[net_pass];
+printf("DEBUG: baseline[%s] = %lld\n", net_stats_label[net_pass], baseline[net_pass]);
+	    }
+	} else {
+	    if ((snapshot[0] - baseline[0]) > 1000000L) {
+		/* Update deltas if this is more than 1s after baseline */
+		for (net_pass = 0; net_pass < NUM_NET_STATS; net_pass++) {
+		    if (snapshot[net_pass] >= baseline[net_pass]) {
+			pnet[net_pass] = snapshot[net_pass] - baseline[net_pass];
+		    } else {
+			/* Counter rollover estimation */
+			int64_t net_rollover;
+			for (net_rollover = pow(2,31); net_rollover >= baseline[net_pass]; net_rollover += net_rollover)
+			    ;
+			if ((net_rollover / 2) > baseline[net_pass]) {
+			    pnet[net_pass] = 0; /* Ignore unreliable (reset? overlapped?) counter */
+			} else {
+			    pnet[net_pass] = net_rollover - baseline[net_pass] + snapshot[net_pass];
+			}
+		    }
+printf("DEBUG: delta[%s] = (%lld - %lld) = %lld\n", net_stats_label[net_pass], snapshot[net_pass], baseline[net_pass], pnet[net_pass]);
+		}
+	    } else {
+printf("DEBUG: invalid timestamp delta %lld\n", snapshot[0] - baseline[0]);
+	    }
+	}
+
+	/* Cleanup when final stats delivered */
+	if (sock_fd < 0) {
+	    if (ifname != NULL)
+	    	free(ifname);
+	    for (net_pass = 0; net_pass < NUM_NET_STATS; net_pass++) {
+	    	baseline[net_pass] = 0;
+	    }
+	}
+    }
+}
 
 
 void

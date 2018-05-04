@@ -36,6 +36,11 @@
 #include "queue.h"
 #include "cjson.h"
 
+#ifndef NUM_NET_STATS
+#define NUM_NET_STATS 5
+extern char *net_stats_label[];
+#endif
+
 typedef uint64_t iperf_size_t;
 
 struct iperf_interval_results
@@ -222,6 +227,9 @@ struct iperf_test
 
     double cpu_util[3];                            /* cpu utilization of the test - total, user, system */
     double remote_cpu_util[3];                     /* cpu utilization for the remote host/client - total, user, system */
+
+    int64_t net_if_util[NUM_NET_STATS];         /* network interface utilization of the test - duration (usec), rx_bytes, rx_packets, tx_bytes, tx_packets */
+    int64_t remote_net_if_util[NUM_NET_STATS];  /* network interface utilization for the remote host/client */
 
     int       num_streams;                      /* total streams in the test (-P) */
 

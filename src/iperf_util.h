@@ -41,6 +41,11 @@ double timeval_diff(struct timeval *tv0, struct timeval *tv1);
 
 int delay(int64_t ns);
 
+#ifndef NUM_NET_STATS
+#define NUM_NET_STATS 5
+#endif
+void net_if_util(int sock_fd, int64_t pnet[NUM_NET_STATS]); /* Network i/f metrics */
+
 void cpu_util(double pcpu[3]);
 
 char* get_system_info(void);
