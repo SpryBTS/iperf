@@ -522,13 +522,13 @@ iperf_run_server(struct iperf_test *test)
 		    }
 
                     if (!is_closed(s)) {
-			net_if_util(s, test->net_if_util);  /* Network i/f utilization - initialize */
                         sp = iperf_new_stream(test, s);
                         if (!sp) {
 			    cleanup_server(test);
                             return -1;
 			}
 
+			net_if_util(s, test->net_if_util);  /* Network i/f utilization - initialize */
 			if (test->sender)
 			    FD_SET(s, &test->write_set);
 			else

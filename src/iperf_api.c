@@ -459,7 +459,8 @@ iperf_on_test_start(struct iperf_test *test)
 **
 ** If the v6 address is not v4-mapped it is left alone.
 */
-static void
+/* static void */
+void
 mapped_v4_to_regular_v4(char *str)
 {
     char *prefix = "::ffff:";

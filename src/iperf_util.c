@@ -44,6 +44,7 @@
 
 #include "config.h"
 #include "cjson.h"
+#include "net.h"
 
 #define NUM_NET_STATS 5
 char *net_stats_label[] = {"duration", "rx_bytes", "rx_packets", "tx_bytes", "tx_packets"};
@@ -52,6 +53,9 @@ char *net_stats_label[] = {"duration", "rx_bytes", "rx_packets", "tx_bytes", "tx
 #include <math.h>
 #include <ifaddrs.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
+
+extern void mapped_v4_to_regular_v4(char *str);
 
 /* make_cookie
  *
@@ -192,43 +196,67 @@ net_if_util(int sock_fd, int64_t pnet[NUM_NET_STATS])
     struct timeval t_now;
 
     /* Find i/f name - ref: https://stackoverflow.com/questions/848040 */
-    struct sockaddr_in addr;
+    int sock_domain;
+    char laddr[INET6_ADDRSTRLEN], iaddr[INET6_ADDRSTRLEN];
     struct ifaddrs *ifaddr;
     struct ifaddrs *ifa;
     socklen_t addr_len;
 
     if (sock_fd >= 0) {  /* static i/f name for an open socket */
-        addr_len = sizeof(addr);
-	getsockname(sock_fd, (struct sockaddr *)&addr, &addr_len);
+
+	sock_domain = getsockdomain(sock_fd);
+	if (sock_domain == AF_INET) {
+	    struct sockaddr_in addr;
+	    getsockname(sock_fd, (struct sockaddr *)&addr, &addr_len);
+	    inet_ntop(AF_INET, (void *) &((struct sockaddr_in *) &addr)->sin_addr, laddr, sizeof(laddr));
+	} else {
+	    struct sockaddr_in6 addr;
+	    addr_len = sizeof(addr);
+	    getsockname(sock_fd, (struct sockaddr *)&addr, &addr_len);
+	    inet_ntop(AF_INET6, (void *) &((struct sockaddr_in6 *) &addr)->sin6_addr, laddr, sizeof(laddr));
+	}
+	mapped_v4_to_regular_v4(laddr);
+
+printf("DEBUG: local_addr = %s\n", laddr);
+
+/*
+if ((inaddr != NULL) && (&(inaddr->sin_addr) != (struct in_addr *)NULL)) {
+    printf("DEBUG: inaddr->sin_addr.s_addr = 0x%x\n", inaddr->sin_addr.s_addr);
+} */
+
 	(void)getifaddrs(&ifaddr);
 
-if (&(addr.sin_addr) != (struct in_addr *)NULL) {
-    printf("DEBUG: addr.sin_addr.s_addr = 0x%x\n", addr.sin_addr.s_addr);
-}
-
 	for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
+	    memset(iaddr, 0, sizeof(iaddr));
+
 	    if ((ifa->ifa_addr != NULL) && (AF_INET == ifa->ifa_addr->sa_family)) {
 	        struct sockaddr_in *inaddr = (struct sockaddr_in *)ifa->ifa_addr;
 
-if ((inaddr != NULL) && (&(inaddr->sin_addr) != (struct in_addr *)NULL)) {
-    printf("DEBUG: inaddr->sin_addr.s_addr = 0x%x\n", inaddr->sin_addr.s_addr);
-}
-		if (
-		        (&(addr.sin_addr) != (struct in_addr *)NULL) &&
-		        (inaddr != NULL) &&
-		        (&(inaddr->sin_addr) != (struct in_addr *)NULL) &&
-		        (inaddr->sin_addr.s_addr == addr.sin_addr.s_addr)
-		    ) {
-		    if (ifa->ifa_name) {
-		        /* FOUND! */
-			int ifname_len;
-			ifname_len = strlen(ifa->ifa_name);
-			if (ifname_len > 255) ifname_len = 255;
-			ifname = (char *)malloc(ifname_len+1);
-			strncpy(ifname, ifa->ifa_name, ifname_len);
-			ifname[ifname_len] = (char)0;
-		    }
+		if ((inaddr != NULL) && (&(inaddr->sin_addr) != (struct in_addr *)NULL)) {
+		    inet_ntop(AF_INET, (void *) &((struct sockaddr_in *) &inaddr)->sin_addr, iaddr, sizeof(iaddr));
+		    mapped_v4_to_regular_v4(iaddr);
+printf("DEBUG: ipv4_addr = %s\n", iaddr);
 		}
+	    }
+	    if ((ifa->ifa_addr != NULL) && (AF_INET6 == ifa->ifa_addr->sa_family)) {
+	        struct sockaddr_in6 *inaddr = (struct sockaddr_in6 *)ifa->ifa_addr;
+
+		if ((inaddr != NULL) && (&(inaddr->sin6_addr) != (struct in6_addr *)NULL)) {
+		    inet_ntop(AF_INET6, (void *) &((struct sockaddr_in6 *) &inaddr)->sin6_addr, iaddr, sizeof(iaddr));
+		    mapped_v4_to_regular_v4(iaddr);
+printf("DEBUG: ipv6_addr = %s\n", iaddr);
+		}
+	    }
+
+
+	    if (ifa->ifa_name && !strcmp(laddr, iaddr)) {
+		/* FOUND! */
+		int ifname_len;
+		ifname_len = strlen(ifa->ifa_name);
+		if (ifname_len > 255) ifname_len = 255;
+		ifname = (char *)malloc(ifname_len+1);
+		strncpy(ifname, ifa->ifa_name, ifname_len);
+		ifname[ifname_len] = (char)0;
 	    }
 	}
 	freeifaddrs(ifaddr);
