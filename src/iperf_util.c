@@ -207,13 +207,14 @@ net_if_util(int sock_fd, int64_t pnet[NUM_NET_STATS])
 	sock_domain = getsockdomain(sock_fd);
 	if (sock_domain == AF_INET) {
 	    struct sockaddr_in addr;
+	    addr_len = sizeof(addr);
 	    getsockname(sock_fd, (struct sockaddr *)&addr, &addr_len);
-	    inet_ntop(AF_INET, (void *) &((struct sockaddr_in *) &addr)->sin_addr, laddr, sizeof(laddr));
+	    inet_ntop(AF_INET, (void *) &((struct sockaddr_in *) addr)->sin_addr, laddr, sizeof(laddr));
 	} else {
 	    struct sockaddr_in6 addr;
 	    addr_len = sizeof(addr);
 	    getsockname(sock_fd, (struct sockaddr *)&addr, &addr_len);
-	    inet_ntop(AF_INET6, (void *) &((struct sockaddr_in6 *) &addr)->sin6_addr, laddr, sizeof(laddr));
+	    inet_ntop(AF_INET6, (void *) &((struct sockaddr_in6 *) addr)->sin6_addr, laddr, sizeof(laddr));
 	}
 	mapped_v4_to_regular_v4(laddr);
 
@@ -233,7 +234,7 @@ if ((inaddr != NULL) && (&(inaddr->sin_addr) != (struct in_addr *)NULL)) {
 	        struct sockaddr_in *inaddr = (struct sockaddr_in *)ifa->ifa_addr;
 
 		if ((inaddr != NULL) && (&(inaddr->sin_addr) != (struct in_addr *)NULL)) {
-		    inet_ntop(AF_INET, (void *) &((struct sockaddr_in *) &inaddr)->sin_addr, iaddr, sizeof(iaddr));
+		    inet_ntop(AF_INET, (void *) &((struct sockaddr_in *) inaddr)->sin_addr, iaddr, sizeof(iaddr));
 		    mapped_v4_to_regular_v4(iaddr);
 printf("DEBUG: ipv4_addr = %s\n", iaddr);
 		}
@@ -242,7 +243,7 @@ printf("DEBUG: ipv4_addr = %s\n", iaddr);
 	        struct sockaddr_in6 *inaddr = (struct sockaddr_in6 *)ifa->ifa_addr;
 
 		if ((inaddr != NULL) && (&(inaddr->sin6_addr) != (struct in6_addr *)NULL)) {
-		    inet_ntop(AF_INET6, (void *) &((struct sockaddr_in6 *) &inaddr)->sin6_addr, iaddr, sizeof(iaddr));
+		    inet_ntop(AF_INET6, (void *) &((struct sockaddr_in6 *) inaddr)->sin6_addr, iaddr, sizeof(iaddr));
 		    mapped_v4_to_regular_v4(iaddr);
 printf("DEBUG: ipv6_addr = %s\n", iaddr);
 		}
