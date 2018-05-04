@@ -503,7 +503,6 @@ iperf_run_server(struct iperf_test *test)
                         return -1;
                     }
                     FD_CLR(test->listener, &read_set);
-		    net_if_util(test->ctrl_sck, test->net_if_util);  /* Network i/f utilization - initialize */
                 }
             }
             if (FD_ISSET(test->ctrl_sck, &read_set)) {
@@ -523,6 +522,7 @@ iperf_run_server(struct iperf_test *test)
 		    }
 
                     if (!is_closed(s)) {
+			net_if_util(s, test->net_if_util);  /* Network i/f utilization - initialize */
                         sp = iperf_new_stream(test, s);
                         if (!sp) {
 			    cleanup_server(test);
