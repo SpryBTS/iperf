@@ -194,6 +194,7 @@ net_if_util(int sock_fd, int64_t pnet[NUM_NET_STATS])
     static int64_t baseline[NUM_NET_STATS];
 
     struct timeval t_now;
+    int net_pass;
 
     /* Find i/f name - ref: https://stackoverflow.com/questions/848040 */
     int sock_domain;
@@ -202,7 +203,7 @@ net_if_util(int sock_fd, int64_t pnet[NUM_NET_STATS])
     struct ifaddrs *ifa;
     socklen_t addr_len;
 
-    if (sock_fd >= 0) {  /* static i/f name for an open socket */
+    if ((ifname == NULL) && (sock_fd >= 0)) {  /* static i/f name for an open socket */
 
 	sock_domain = getsockdomain(sock_fd);
 	if (sock_domain == AF_INET) {
@@ -220,11 +221,6 @@ net_if_util(int sock_fd, int64_t pnet[NUM_NET_STATS])
 
 printf("DEBUG: local_addr = %s\n", laddr);
 
-/*
-if ((inaddr != NULL) && (&(inaddr->sin_addr) != (struct in_addr *)NULL)) {
-    printf("DEBUG: inaddr->sin_addr.s_addr = 0x%x\n", inaddr->sin_addr.s_addr);
-} */
-
 	(void)getifaddrs(&ifaddr);
 
 	for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
@@ -236,7 +232,7 @@ if ((inaddr != NULL) && (&(inaddr->sin_addr) != (struct in_addr *)NULL)) {
 		if ((inaddr != NULL) && (&(inaddr->sin_addr) != (struct in_addr *)NULL)) {
 		    inet_ntop(AF_INET, (void *) &((struct sockaddr_in *) inaddr)->sin_addr, iaddr, sizeof(iaddr));
 		    mapped_v4_to_regular_v4(iaddr);
-printf("DEBUG: ipv4_addr = %s\n", iaddr);
+printf("DEBUG: ifname = '%s'  ipv4_addr = %s\n", ifa->ifa_name, iaddr);
 		}
 	    }
 	    if ((ifa->ifa_addr != NULL) && (AF_INET6 == ifa->ifa_addr->sa_family)) {
@@ -245,7 +241,7 @@ printf("DEBUG: ipv4_addr = %s\n", iaddr);
 		if ((inaddr != NULL) && (&(inaddr->sin6_addr) != (struct in6_addr *)NULL)) {
 		    inet_ntop(AF_INET6, (void *) &((struct sockaddr_in6 *) inaddr)->sin6_addr, iaddr, sizeof(iaddr));
 		    mapped_v4_to_regular_v4(iaddr);
-printf("DEBUG: ipv6_addr = %s\n", iaddr);
+printf("DEBUG: ifname = '%s'  ipv6_addr = %s\n", ifa->ifa_name, iaddr);
 		}
 	    }
 
@@ -258,6 +254,7 @@ printf("DEBUG: ipv6_addr = %s\n", iaddr);
 		ifname = (char *)malloc(ifname_len+1);
 		strncpy(ifname, ifa->ifa_name, ifname_len);
 		ifname[ifname_len] = (char)0;
+printf("DEBUG: ifname = '%s'\n", ifname);
 	    }
 	}
 	freeifaddrs(ifaddr);
@@ -269,10 +266,9 @@ printf("DEBUG: ipv6_addr = %s\n", iaddr);
      * /sys/class/net/<ifname>/statistics/{rx_bytes,rx_packets,tx_bytes,tx_packets}
      */
 
-    if ((ifname != NULL) && (strlen(ifname) > 0)) {
+    if (ifname != NULL) {
 	int i;
 	int net_fd;
-	int net_pass;
 
 	int net_fullpathsize = 256;
     	char net_fullpath[net_fullpathsize];
@@ -338,14 +334,14 @@ printf("DEBUG: ipv6_addr = %s\n", iaddr);
 		}
 	    }
 	}
+    }
 
-	/* Cleanup when final stats delivered */
-	if (sock_fd < 0) {
-	    if (ifname != NULL)
-	    	free(ifname);
-	    for (net_pass = 0; net_pass < NUM_NET_STATS; net_pass++) {
-	    	baseline[net_pass] = 0;
-	    }
+    /* Cleanup when final stats delivered */
+    if ((sock_fd < 0) || (ifname == NULL) || (strlen(ifname) <= 0)) {
+	if (ifname != NULL)
+	    free(ifname);
+	for (net_pass = 0; net_pass < NUM_NET_STATS; net_pass++) {
+	    baseline[net_pass] = 0;
 	}
     }
 }
