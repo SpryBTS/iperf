@@ -511,7 +511,6 @@ iperf_run_server(struct iperf_test *test)
 
     // Begin calculating CPU utilization
     cpu_util(NULL);
-    net_if_util(test->ctrl_sck, test->net_if_util);  /* Network i/f utilization - initialize */
 
     test->state = IPERF_START;
     streams_accepted = 0;
@@ -537,6 +536,7 @@ iperf_run_server(struct iperf_test *test)
                         return -1;
                     }
                     FD_CLR(test->listener, &read_set);
+		    net_if_util(test->ctrl_sck, test->net_if_util);  /* Network i/f utilization - initialize */
                 }
             }
             if (FD_ISSET(test->ctrl_sck, &read_set)) {

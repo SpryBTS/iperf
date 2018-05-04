@@ -198,7 +198,7 @@ net_if_util(int sock_fd, int64_t pnet[NUM_NET_STATS])
     struct ifaddrs *ifa;
     socklen_t addr_len;
 
-    if ((ifname == NULL) && (sock_fd >= 0)) {  /* static i/f name for an open socket */
+    if (sock_fd >= 0) {  /* static i/f name for an open socket */
         addr_len = sizeof(addr);
 	getsockname(sock_fd, (struct sockaddr *)&addr, &addr_len);
 	(void)getifaddrs(&ifaddr);
@@ -307,6 +307,15 @@ printf("DEBUG: delta[%s] = (%lld - %lld) = %lld\n", net_stats_label[net_pass], s
 		}
 	    } else {
 printf("DEBUG: invalid timestamp delta %lld\n", snapshot[0] - baseline[0]);
+	    }
+	}
+
+	/* Cleanup when final stats delivered */
+	if (sock_fd < 0) {
+	    if (ifname != NULL)
+	    	free(ifname);
+	    for (net_pass = 0; net_pass < NUM_NET_STATS; net_pass++) {
+	    	baseline[net_pass] = 0;
 	    }
 	}
     }

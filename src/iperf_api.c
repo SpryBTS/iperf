@@ -1482,7 +1482,9 @@ send_results(struct iperf_test *test)
 	cJSON_AddNumberToObject(j, "cpu_util_system", test->cpu_util[2]);
 
 	for (i = 0; i < NUM_NET_STATS; i++) {
-	    cJSON_AddNumberToObject(j, net_stats_label[i], test->net_if_util[i]);
+	    char temp_label[64];
+	    snprintf(temp_label, 64, "net_if_util_%s", net_stats_label[i]);
+	    cJSON_AddNumberToObject(j, temp_label, test->net_if_util[i]);
 	}
 
 	if ( ! test->sender )
@@ -1611,7 +1613,9 @@ get_results(struct iperf_test *test)
 
 	    for (i = 0; i < NUM_NET_STATS; i++) {
 		cJSON *net_if_stat;
-		net_if_stat = cJSON_GetObjectItem(j, net_stats_label[i]);
+		char temp_label[64];
+		snprintf(temp_label, 64, "net_if_util_%s", net_stats_label[i]);
+		net_if_stat = cJSON_GetObjectItem(j, temp_label);
 		if (net_if_stat == NULL) {
 		    test->remote_net_if_util[i] = 0L;
 		} else {
@@ -2580,7 +2584,7 @@ iperf_print_results(struct iperf_test *test)
     if (test->json_output) {
 	cJSON_AddItemToObject(test->json_end, "cpu_utilization_percent", iperf_json_printf("host_total: %f  host_user: %f  host_system: %f  remote_total: %f  remote_user: %f  remote_system: %f", (double) test->cpu_util[0], (double) test->cpu_util[1], (double) test->cpu_util[2], (double) test->remote_cpu_util[0], (double) test->remote_cpu_util[1], (double) test->remote_cpu_util[2]));
 	if (net_if_valid == 1) {
-	    cJSON_AddItemToObject(test->json_end, "network_if_utilization_deltas", iperf_json_printf("host_duration_usec: %ld  host_rx_bytes: %ld  host_rx_packets: %ld  host_tx_bytes: %ld  host_tx_packets: %ld  remote_duration_usec: %ld  remote_rx_bytes: %ld  remote_rx_packets: %ld  remote_tx_bytes: %ld  remote_tx_packets: %ld", (int64_t) test->net_if_util[0], (int64_t) test->net_if_util[1], (int64_t) test->net_if_util[2], (int64_t) test->net_if_util[3], (int64_t) test->net_if_util[4], (int64_t) test->remote_net_if_util[0], (int64_t) test->remote_net_if_util[1], (int64_t) test->remote_net_if_util[2], (int64_t) test->remote_net_if_util[3], (int64_t) test->remote_net_if_util[4]));
+	    cJSON_AddItemToObject(test->json_end, "network_if_utilization_deltas", iperf_json_printf("host_duration_usec: %d  host_rx_bytes: %d  host_rx_packets: %d  host_tx_bytes: %d  host_tx_packets: %d  remote_duration_usec: %d  remote_rx_bytes: %d  remote_rx_packets: %d  remote_tx_bytes: %d  remote_tx_packets: %d", (int64_t) test->net_if_util[0], (int64_t) test->net_if_util[1], (int64_t) test->net_if_util[2], (int64_t) test->net_if_util[3], (int64_t) test->net_if_util[4], (int64_t) test->remote_net_if_util[0], (int64_t) test->remote_net_if_util[1], (int64_t) test->remote_net_if_util[2], (int64_t) test->remote_net_if_util[3], (int64_t) test->remote_net_if_util[4]));
 	}
 	if (test->protocol->id == Ptcp) {
 	    char *snd_congestion = NULL, *rcv_congestion = NULL;
