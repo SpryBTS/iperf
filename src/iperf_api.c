@@ -2226,13 +2226,12 @@ iperf_print_results(struct iperf_test *test)
        net_if_valid = 1;
     }
 
-    if (test->json_output)
+    if (test->json_output) {
 	cJSON_AddItemToObject(test->json_end, "cpu_utilization_percent", iperf_json_printf("host_total: %f  host_user: %f  host_system: %f  remote_total: %f  remote_user: %f  remote_system: %f", (double) test->cpu_util[0], (double) test->cpu_util[1], (double) test->cpu_util[2], (double) test->remote_cpu_util[0], (double) test->remote_cpu_util[1], (double) test->remote_cpu_util[2]));
         if (net_if_valid == 1) {
             cJSON_AddItemToObject(test->json_end, "network_if_utilization_deltas", iperf_json_printf("host_duration_usec: %d  host_rx_bytes: %d  host_rx_packets: %d  host_tx_bytes: %d  host_tx_packets: %d  remote_duration_usec: %d  remote_rx_bytes: %d  remote_rx_packets: %d  remote_tx_bytes: %d  remote_tx_packets: %d", (int64_t) test->net_if_util[0], (int64_t) test->net_if_util[1], (int64_t) test->net_if_util[2], (int64_t) test->net_if_util[3], (int64_t) test->net_if_util[4], (int64_t) test->remote_net_if_util[0], (int64_t) test->remote_net_if_util[1], (int64_t) test->remote_net_if_util[2], (int64_t) test->remote_net_if_util[3], (int64_t) test->remote_net_if_util[4]));
         }
-    }
-    else {
+    } else {
 	if (test->verbose) {
 	    iprintf(test, report_cpu, report_local, test->sender?report_sender:report_receiver, test->cpu_util[0], test->cpu_util[1], test->cpu_util[2], report_remote, test->sender?report_receiver:report_sender, test->remote_cpu_util[0], test->remote_cpu_util[1], test->remote_cpu_util[2]);
 	}

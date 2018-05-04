@@ -260,19 +260,16 @@ net_if_util(int sock_fd, int64_t pnet[NUM_NET_STATS])
 		    net_buflen = 0;
 		    memset(net_fullpath, 0, net_fullpathsize);
 		    snprintf(net_fullpath, net_fullpathsize, "/sys/class/net/%s/statistics/%s", ifname, net_stats_label[net_pass]);
-printf("DEBUG: opening %s\n", net_fullpath);
 		    if ((net_fd = open(net_fullpath, O_RDONLY)) >= 0) {
 			net_buflen = read(net_fd, net_buf, net_bufsize);
 			close(net_fd);
 		    }
 		    if (net_buflen > 0) {
-printf("DEBUG: read '%*.*s'\n", net_buflen-1, net_buflen-1, net_buf);
 			ss = 0;
 			for (i = 0; (i < net_buflen) && (net_buf[i] >= '0') && (net_buf[i] <= '9'); i++) {
 			    ss = ss * 10 + net_buf[i] - '0';
 			}
 			snapshot[net_pass] = ss;
-printf("DEBUG: snapshot[%s] = %lld\n", net_stats_label[net_pass], snapshot[net_pass]);
 		    }
 		}
 	    }
@@ -283,7 +280,6 @@ printf("DEBUG: snapshot[%s] = %lld\n", net_stats_label[net_pass], snapshot[net_p
 	    for (net_pass = 0; net_pass < NUM_NET_STATS; net_pass++) {
 		pnet[net_pass] = 0;
 		baseline[net_pass] = snapshot[net_pass];
-printf("DEBUG: baseline[%s] = %lld\n", net_stats_label[net_pass], baseline[net_pass]);
 	    }
 	} else {
 	    if ((snapshot[0] - baseline[0]) > 1000000L) {
@@ -302,10 +298,7 @@ printf("DEBUG: baseline[%s] = %lld\n", net_stats_label[net_pass], baseline[net_p
 			    pnet[net_pass] = net_rollover - baseline[net_pass] + snapshot[net_pass];
 			}
 		    }
-printf("DEBUG: delta[%s] = (%lld - %lld) = %lld\n", net_stats_label[net_pass], snapshot[net_pass], baseline[net_pass], pnet[net_pass]);
 		}
-	    } else {
-printf("DEBUG: invalid timestamp delta %lld\n", snapshot[0] - baseline[0]);
 	    }
 	}
 
