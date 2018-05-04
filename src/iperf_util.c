@@ -219,8 +219,6 @@ net_if_util(int sock_fd, int64_t pnet[NUM_NET_STATS])
 	}
 	mapped_v4_to_regular_v4(laddr);
 
-printf("DEBUG: local_addr = %s\n", laddr);
-
 	(void)getifaddrs(&ifaddr);
 
 	for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
@@ -232,7 +230,6 @@ printf("DEBUG: local_addr = %s\n", laddr);
 		if ((inaddr != NULL) && (&(inaddr->sin_addr) != (struct in_addr *)NULL)) {
 		    inet_ntop(AF_INET, (void *) &((struct sockaddr_in *) inaddr)->sin_addr, iaddr, sizeof(iaddr));
 		    mapped_v4_to_regular_v4(iaddr);
-printf("DEBUG: ifname = '%s'  ipv4_addr = %s\n", ifa->ifa_name, iaddr);
 		}
 	    }
 	    if ((ifa->ifa_addr != NULL) && (AF_INET6 == ifa->ifa_addr->sa_family)) {
@@ -241,7 +238,6 @@ printf("DEBUG: ifname = '%s'  ipv4_addr = %s\n", ifa->ifa_name, iaddr);
 		if ((inaddr != NULL) && (&(inaddr->sin6_addr) != (struct in6_addr *)NULL)) {
 		    inet_ntop(AF_INET6, (void *) &((struct sockaddr_in6 *) inaddr)->sin6_addr, iaddr, sizeof(iaddr));
 		    mapped_v4_to_regular_v4(iaddr);
-printf("DEBUG: ifname = '%s'  ipv6_addr = %s\n", ifa->ifa_name, iaddr);
 		}
 	    }
 
@@ -254,7 +250,6 @@ printf("DEBUG: ifname = '%s'  ipv6_addr = %s\n", ifa->ifa_name, iaddr);
 		ifname = (char *)malloc(ifname_len+1);
 		strncpy(ifname, ifa->ifa_name, ifname_len);
 		ifname[ifname_len] = (char)0;
-printf("DEBUG: ifname = '%s'\n", ifname);
 	    }
 	}
 	freeifaddrs(ifaddr);
@@ -308,10 +303,10 @@ printf("DEBUG: ifname = '%s'\n", ifname);
 	    }
 	}
 
-	if (baseline[0] <= 0) { /* Timestamp */
+	if (baseline[0] <= 0L) { /* Timestamp */
 	    /* Lock away start baseline first time through */
 	    for (net_pass = 0; net_pass < NUM_NET_STATS; net_pass++) {
-		pnet[net_pass] = 0;
+		pnet[net_pass] = 0L;
 		baseline[net_pass] = snapshot[net_pass];
 	    }
 	} else {
@@ -337,9 +332,12 @@ printf("DEBUG: ifname = '%s'\n", ifname);
     }
 
     /* Cleanup when final stats delivered */
-    if ((sock_fd < 0) || (ifname == NULL) || (strlen(ifname) <= 0)) {
+    if ((sock_fd < 0) || (ifname == NULL)) {
 	if (ifname != NULL)
+	{
 	    free(ifname);
+	    ifname = (char *)0;
+	}
 	for (net_pass = 0; net_pass < NUM_NET_STATS; net_pass++) {
 	    baseline[net_pass] = 0;
 	}
