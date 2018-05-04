@@ -147,6 +147,7 @@ const char usage_longstr[] = "Usage: iperf [-s|-c host] [options]\n"
 
 			   "\n"
                            "[KMG] indicates options that support a K/M/G suffix for kilo-, mega-, or giga-\n"
+			   "iperf3 built with OS network interface counters\n"
 			   "\n"
 #ifdef PACKAGE_URL
                            "iperf3 homepage at: " PACKAGE_URL "\n"
