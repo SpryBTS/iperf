@@ -421,6 +421,7 @@ iperf_run_server(struct iperf_test *test)
 
     // Begin calculating CPU utilization
     cpu_util(NULL);
+    net_if_util(test->ctrl_sck, test->net_if_util);  /* Network i/f utilization - initialize */
 
     test->state = IPERF_START;
     streams_accepted = 0;
@@ -510,7 +511,6 @@ iperf_run_server(struct iperf_test *test)
 #endif /* HAVE_TCP_CONGESTION */
 
                     if (!is_closed(s)) {
-			net_if_util(s, test->net_if_util);  /* Network i/f utilization - initialize */
                         sp = iperf_new_stream(test, s);
                         if (!sp) {
 			    cleanup_server(test);

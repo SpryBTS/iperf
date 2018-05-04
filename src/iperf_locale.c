@@ -389,7 +389,7 @@ const char report_cpu[] =
 "CPU Utilization: %s/%s %.1f%% (%.1f%%u/%.1f%%s), %s/%s %.1f%% (%.1f%%u/%.1f%%s)\n";
 
 const char report_net_if[] =
-"Network Summary (bytes/pkts): %s/%s (%l sec) %l/%l rx / %l/%l tx, %s/%s (%l sec) %l/%l rx / %l/%l tx\n";
+"Network Summary (bytes/pkts): %s/%s (%ld usec) %ld/%ld rx / %ld/%ld tx, %s/%s (%ld usec) %ld/%ld rx / %ld/%ld tx\n";
 
 const char report_local[] = "local";
 const char report_remote[] = "remote";

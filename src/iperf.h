@@ -69,8 +69,8 @@
 
 #ifndef NUM_NET_STATS
 #define NUM_NET_STATS 5
+extern char *net_stats_label[];
 #endif
-static char *net_stats_label[NUM_NET_STATS];
 
 typedef uint64_t iperf_size_t;
 
