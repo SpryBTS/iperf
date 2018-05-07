@@ -203,8 +203,6 @@ net_if_util(int sock_fd, int64_t pnet[NUM_NET_STATS])
     struct ifaddrs *ifa;
     socklen_t addr_len;
 
-printf("DEBUG: Entered net_if_util. sock_fd = %d. ifname = %s\n", sock_fd, ifname);
-
     if ((ifname == NULL) && (sock_fd > 0)) {  /* static i/f name for an open socket */
 
 	sock_domain = getsockdomain(sock_fd);
@@ -278,9 +276,7 @@ printf("DEBUG: Entered net_if_util. sock_fd = %d. ifname = %s\n", sock_fd, ifnam
 	int64_t ss;
 
 	/* Get snapshot of current state */
-printf("DEBUG: Snapshotting. ifname = %s\n", ifname);
 	gettimeofday(&t_now, NULL);
-printf("DEBUG: tv_sec = %lu    tv_usec  %lu\n", t_now.tv_sec, t_now.tv_usec);
 	snapshot[0] = t_now.tv_sec * 1000000.0 + t_now.tv_usec;
 	for (net_pass = 1; net_pass < NUM_NET_STATS; net_pass++) {
 	    snapshot[net_pass] = 0;
@@ -304,7 +300,6 @@ printf("DEBUG: tv_sec = %lu    tv_usec  %lu\n", t_now.tv_sec, t_now.tv_usec);
 	    }
 	}
 
-printf("DEBUG: Testing for snapshot. snapshot[0] = %llu    baseline[0] = %llu\n", snapshot[0], baseline[0]);
 	if (baseline[0] <= 0L) { /* Timestamp */
 	    /* Lock away start baseline first time through */
 	    for (net_pass = 0; net_pass < NUM_NET_STATS; net_pass++) {
@@ -314,7 +309,6 @@ printf("DEBUG: Testing for snapshot. snapshot[0] = %llu    baseline[0] = %llu\n"
 	} else {
 	    if ((snapshot[0] - baseline[0]) > 1000000L) {
 		/* Update deltas if this is more than 1s after baseline */
-printf("DEBUG: Updating deltas. ifname = %s\n", ifname);
 		for (net_pass = 0; net_pass < NUM_NET_STATS; net_pass++) {
 		    if (snapshot[net_pass] >= baseline[net_pass]) {
 			pnet[net_pass] = snapshot[net_pass] - baseline[net_pass];
