@@ -306,6 +306,7 @@ printf("DEBUG: Snapshotting. ifname = %s\n", ifname);
 	    }
 	}
 
+printf("DEBUG: Testing for snapshot. snapshot[0] = %d    baseline[0] = %d\n", snapshot[0], baseline[0]);
 	if (baseline[0] <= 0L) { /* Timestamp */
 	    /* Lock away start baseline first time through */
 	    for (net_pass = 0; net_pass < NUM_NET_STATS; net_pass++) {
