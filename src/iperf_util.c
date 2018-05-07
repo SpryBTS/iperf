@@ -203,6 +203,8 @@ net_if_util(int sock_fd, int64_t pnet[NUM_NET_STATS])
     struct ifaddrs *ifa;
     socklen_t addr_len;
 
+printf("DEBUG: Entered net_if_util. sock_fd = %d. ifname = %s\n", sock_fd, ifname);
+
     if ((ifname == NULL) && (sock_fd > 0)) {  /* static i/f name for an open socket */
 
 	sock_domain = getsockdomain(sock_fd);
@@ -276,6 +278,7 @@ net_if_util(int sock_fd, int64_t pnet[NUM_NET_STATS])
 	int64_t ss;
 
 	/* Get snapshot of current state */
+printf("DEBUG: Snapshotting. ifname = %s\n", ifname);
 	gettimeofday(&t_now, NULL);
 	for (net_pass = 0; net_pass < NUM_NET_STATS; net_pass++) {
 	    snapshot[net_pass] = 0;
@@ -312,6 +315,7 @@ net_if_util(int sock_fd, int64_t pnet[NUM_NET_STATS])
 	} else {
 	    if ((snapshot[0] - baseline[0]) > 1000000L) {
 		/* Update deltas if this is more than 1s after baseline */
+printf("DEBUG: Updating deltas. ifname = %s\n", ifname);
 		for (net_pass = 0; net_pass < NUM_NET_STATS; net_pass++) {
 		    if (snapshot[net_pass] >= baseline[net_pass]) {
 			pnet[net_pass] = snapshot[net_pass] - baseline[net_pass];
