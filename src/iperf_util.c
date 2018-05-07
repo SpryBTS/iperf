@@ -280,7 +280,7 @@ printf("DEBUG: Entered net_if_util. sock_fd = %d. ifname = %s\n", sock_fd, ifnam
 	/* Get snapshot of current state */
 printf("DEBUG: Snapshotting. ifname = %s\n", ifname);
 	gettimeofday(&t_now, NULL);
-printf("DEBUG: tv_sec = %lu    tc_usec  %lu\n", _now.tv_sec, t_now.tv_usec)
+printf("DEBUG: tv_sec = %lu    tv_usec  %lu\n", t_now.tv_sec, t_now.tv_usec)
 	snapshot[0] = t_now.tv_sec * 1000000.0 + t_now.tv_usec;
 	for (net_pass = 1; net_pass < NUM_NET_STATS; net_pass++) {
 	    snapshot[net_pass] = 0;
