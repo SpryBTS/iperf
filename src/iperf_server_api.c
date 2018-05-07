@@ -442,7 +442,7 @@ sigend_handler(int sig)
 int
 iperf_run_server(struct iperf_test *test)
 {
-    int result, s, streams_accepted;
+    int result, s, ls, streams_accepted;
     fd_set read_set, write_set;
     struct iperf_stream *sp;
     struct timeval now;
@@ -516,7 +516,7 @@ iperf_run_server(struct iperf_test *test)
             if (test->state == CREATE_STREAMS) {
                 if (FD_ISSET(test->prot_listener, &read_set)) {
     
-                    if ((s = test->protocol->accept(test)) < 0) {
+                    if ((s = ls = test->protocol->accept(test)) < 0) {
 			cleanup_server(test);
                         return -1;
 		    }
@@ -573,8 +573,8 @@ iperf_run_server(struct iperf_test *test)
                     }
 
 		    /* Network i/f utilization - initialize using the most recently connected stream endpoint for the stats data */
-		    if (!is_closed(s)) {
-			    net_if_util(s, test->net_if_util);
+		    if (!is_closed(ls)) {
+			    net_if_util(ls, test->net_if_util);
 		    }
 
                     test->prot_listener = -1;
