@@ -438,7 +438,7 @@ iperf_run_client(struct iperf_test * test)
 		/* Yes, done!  Send TEST_END. */
 		test->done = 1;
 		cpu_util(test->cpu_util);
-		net_if_util(-1, test->net_if_util);  /* Network i/f utilization - update deltas */
+		net_if_util(-1, test->net_if_util);  /* End network i/f utilization counters */
 		test->stats_callback(test);
 		if (iperf_set_send_state(test, TEST_END) != 0)
 		    return -1;

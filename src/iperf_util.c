@@ -203,7 +203,7 @@ net_if_util(int sock_fd, int64_t pnet[NUM_NET_STATS])
     struct ifaddrs *ifa;
     socklen_t addr_len;
 
-    if ((ifname == NULL) && (sock_fd >= 0)) {  /* static i/f name for an open socket */
+    if ((ifname == NULL) && (sock_fd > 0)) {  /* static i/f name for an open socket */
 
 	sock_domain = getsockdomain(sock_fd);
 	if (sock_domain == AF_INET) {
