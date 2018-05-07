@@ -304,7 +304,7 @@ printf("DEBUG: tv_sec = %lu    tv_usec  %lu\n", t_now.tv_sec, t_now.tv_usec)
 	    }
 	}
 
-printf("DEBUG: Testing for snapshot. snapshot[0] = %lu    baseline[0] = %lu\n", snapshot[0], baseline[0]);
+printf("DEBUG: Testing for snapshot. snapshot[0] = %llu    baseline[0] = %llu\n", snapshot[0], baseline[0]);
 	if (baseline[0] <= 0L) { /* Timestamp */
 	    /* Lock away start baseline first time through */
 	    for (net_pass = 0; net_pass < NUM_NET_STATS; net_pass++) {
