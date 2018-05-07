@@ -1861,7 +1861,7 @@ iperf_reset_stats(struct iperf_test *test)
     test->blocks_sent = 0;
     gettimeofday(&now, NULL);
     SLIST_FOREACH(sp, &test->streams, streams) {
-	net_if_util(sp->socket, test->net_if_util);  /* Network i/f utilization - reset network utilisation numbers */
+	net_if_util(-1, test->net_if_util);  /* Network i/f utilization - reset network utilisation baseline */
 
 	sp->omitted_packet_count = sp->packet_count;
 	sp->jitter = 0;
