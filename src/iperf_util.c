@@ -47,7 +47,7 @@
 #include "net.h"
 
 #define NUM_NET_STATS 5
-char *net_stats_label[] = {"duration", "rx_bytes", "rx_packets", "tx_bytes", "tx_packets"};
+char *net_stats_label[] = {"duration", "rx_bytes", "rx_packets", "tx_bytes", "tx_packets"}; // duration must be first
 
 #include <fcntl.h>
 #include <math.h>
@@ -280,33 +280,30 @@ printf("DEBUG: Entered net_if_util. sock_fd = %d. ifname = %s\n", sock_fd, ifnam
 	/* Get snapshot of current state */
 printf("DEBUG: Snapshotting. ifname = %s\n", ifname);
 	gettimeofday(&t_now, NULL);
-	for (net_pass = 0; net_pass < NUM_NET_STATS; net_pass++) {
+	snapshot[0] = t_now.tv_sec * 1000000L + t_now.tv_usec;
+	for (net_pass = 1; net_pass < NUM_NET_STATS; net_pass++) {
 	    snapshot[net_pass] = 0;
-	    if (!strcmp(net_stats_label[net_pass], "duration")) {
-	    	snapshot[net_pass] = t_now.tv_sec * 1000000L + t_now.tv_usec;
-	    } else {
-		if ((snapshot[0] - baseline[0]) > 1000000L) {
-		    /* Only first time through, or more than 1s later */
-		    /* Allows multiple streams without redundant interface interrogation */
-		    net_buflen = 0;
-		    memset(net_fullpath, 0, net_fullpathsize);
-		    snprintf(net_fullpath, net_fullpathsize, "/sys/class/net/%s/statistics/%s", ifname, net_stats_label[net_pass]);
-		    if ((net_fd = open(net_fullpath, O_RDONLY)) >= 0) {
-			net_buflen = read(net_fd, net_buf, net_bufsize);
-			close(net_fd);
+	    if ((snapshot[0] - baseline[0]) > 1000000L) {
+		/* Only first time through, or more than 1s later */
+		/* Allows multiple streams without redundant interface interrogation */
+		net_buflen = 0;
+		memset(net_fullpath, 0, net_fullpathsize);
+		snprintf(net_fullpath, net_fullpathsize, "/sys/class/net/%s/statistics/%s", ifname, net_stats_label[net_pass]);
+		if ((net_fd = open(net_fullpath, O_RDONLY)) >= 0) {
+		    net_buflen = read(net_fd, net_buf, net_bufsize);
+		    close(net_fd);
+		}
+		if (net_buflen > 0) {
+		    ss = 0;
+		    for (i = 0; (i < net_buflen) && (net_buf[i] >= '0') && (net_buf[i] <= '9'); i++) {
+			ss = ss * 10 + net_buf[i] - '0';
 		    }
-		    if (net_buflen > 0) {
-			ss = 0;
-			for (i = 0; (i < net_buflen) && (net_buf[i] >= '0') && (net_buf[i] <= '9'); i++) {
-			    ss = ss * 10 + net_buf[i] - '0';
-			}
-			snapshot[net_pass] = ss;
-		    }
+		    snapshot[net_pass] = ss;
 		}
 	    }
 	}
 
-printf("DEBUG: Testing for snapshot. snapshot[0] = %d    baseline[0] = %d\n", snapshot[0], baseline[0]);
+printf("DEBUG: Testing for snapshot. snapshot[0] = %lu    baseline[0] = %lu\n", snapshot[0], baseline[0]);
 	if (baseline[0] <= 0L) { /* Timestamp */
 	    /* Lock away start baseline first time through */
 	    for (net_pass = 0; net_pass < NUM_NET_STATS; net_pass++) {
