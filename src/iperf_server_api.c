@@ -528,7 +528,7 @@ iperf_run_server(struct iperf_test *test)
                             return -1;
 			}
 
-			net_if_util(s, test->net_if_util);  /* Network i/f utilization - initialize */
+			// net_if_util(s, test->net_if_util);  /* Network i/f utilization - initialize */
 			if (test->sender)
 			    FD_SET(s, &test->write_set);
 			else
@@ -571,6 +571,12 @@ iperf_run_server(struct iperf_test *test)
 			    if (test->listener > test->max_fd) test->max_fd = test->listener;
                         }
                     }
+
+		    /* Network i/f utilization - initialize using the most recently connected stream endpoint for the stats data */
+		    if (!is_closed(s)) {
+			    net_if_util(s, test->net_if_util);
+		    }
+
                     test->prot_listener = -1;
 		    if (iperf_set_send_state(test, TEST_START) != 0) {
 			cleanup_server(test);
