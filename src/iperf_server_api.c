@@ -516,7 +516,7 @@ iperf_run_server(struct iperf_test *test)
             if (test->state == CREATE_STREAMS) {
                 if (FD_ISSET(test->prot_listener, &read_set)) {
     
-                    if ((s = ls = test->protocol->accept(test)) < 0) {
+                    if ((s = test->protocol->accept(test)) < 0) {
 			cleanup_server(test);
                         return -1;
 		    }
