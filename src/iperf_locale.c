@@ -343,9 +343,6 @@ const char reportCSV_peer[] =
 const char report_cpu[] =
 "CPU Utilization: %s/%s %.1f%% (%.1f%%u/%.1f%%s), %s/%s %.1f%% (%.1f%%u/%.1f%%s)\n";
 
-const char report_net_if[] =
-"Network Summary (bytes/pkts): %s/%s (%ld usec) %ld/%ld rx / %ld/%ld tx, %s/%s (%ld usec) %ld/%ld rx / %ld/%ld tx\n";
-
 const char report_local[] = "local";
 const char report_remote[] = "remote";
 const char report_sender[] = "sender";
@@ -374,6 +371,9 @@ const char reportCSV_bw_format[] =
 
 const char reportCSV_bw_udp_format[] =
 "%s,%s,%d,%.1f-%.1f,%lld,%lld,%.3f,%d,%d,%.3f,%d\n";
+
+const char report_net_if[] =
+"Network Summary (bytes/pkts): %s/%s ( usec) %lld/%lld rx / %lld/%lld tx, %s/%s (%lld usec) %lld/%lld rx / %lld/%lld tx\n";
 #endif // HAVE_PRINTF_QD
 #else // HAVE_QUAD_SUPPORT
 #ifdef WIN32
@@ -382,12 +382,19 @@ const char reportCSV_bw_format[] =
 
 const char reportCSV_bw_udp_format[] =
 "%s,%s,%d,%.1f-%.1f,%I64d,%I64d,%.3f,%d,%d,%.3f,%d\n";
+
+const char report_net_if[] =
+"Network Summary (bytes/pkts): %s/%s ( usec) %I64d/%I64d rx / %I64d/%I64d tx, %s/%s (%I64d usec) %I64d/%I64d rx / %I64d/%I64d tx\n";
+
 #else
 const char reportCSV_bw_format[] =
 "%s,%s,%d,%.1f-%.1f,%d,%d\n";
 
 const char reportCSV_bw_udp_format[] =
 "%s,%s,%d,%.1f-%.1f,%d,%d,%.3f,%d,%d,%.3f,%d\n";
+
+const char report_net_if[] =
+"Network Summary (bytes/pkts): %s/%s ( usec) %ld/%ld rx / %ld/%ld tx, %s/%s (%ld usec) %ld/%ld rx / %ld/%ld tx\n";
 #endif //WIN32
 #endif //HAVE_QUAD_SUPPORT
 /* -------------------------------------------------------------------
