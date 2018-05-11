@@ -2229,6 +2229,7 @@ iperf_print_results(struct iperf_test *test)
        net_if_valid = 1;
     }
 
+printf("report_net_if: %s", report_net_if);
 printf("DEBUG: Testing for JSON\n");
     if (test->json_output) {
 	cJSON_AddItemToObject(test->json_end, "cpu_utilization_percent", iperf_json_printf("host_total: %f  host_user: %f  host_system: %f  remote_total: %f  remote_user: %f  remote_system: %f", (double) test->cpu_util[0], (double) test->cpu_util[1], (double) test->cpu_util[2], (double) test->remote_cpu_util[0], (double) test->remote_cpu_util[1], (double) test->remote_cpu_util[2]));
