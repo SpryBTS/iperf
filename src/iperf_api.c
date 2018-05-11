@@ -2238,11 +2238,12 @@ iperf_print_results(struct iperf_test *test)
 	if (test->verbose) {
 	    iprintf(test, report_cpu, report_local, test->sender?report_sender:report_receiver, test->cpu_util[0], test->cpu_util[1], test->cpu_util[2], report_remote, test->sender?report_receiver:report_sender, test->remote_cpu_util[0], test->remote_cpu_util[1], test->remote_cpu_util[2]);
 
+	    printf("DEBUG: I'm about to check if I should print the stats");
 	    if ((test->role == 'c') && (net_if_valid == 1)) {
-		printf("DEBUG: I'm about to print the stats");
+		    printf("DEBUG: I'm about to check if I should print the stats");
 		iprintf(test, report_net_if, report_local, test->sender?report_sender:report_receiver, test->net_if_util[0], test->net_if_util[1], test->net_if_util[2], test->net_if_util[3], test->net_if_util[4], report_remote, test->sender?report_receiver:report_sender, test->remote_net_if_util[0], test->remote_net_if_util[1], test->remote_net_if_util[2], test->remote_net_if_util[3], test->remote_net_if_util[4]);
-		printf("DEBUG: Done with that");
 	    }
+	    printf("DEBUG: Done with that");
         }
 
 	/* Print server output if we're on the client and it was requested/provided */
