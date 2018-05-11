@@ -228,8 +228,8 @@ struct iperf_test
     double cpu_util[3];                            /* cpu utilization of the test - total, user, system */
     double remote_cpu_util[3];                     /* cpu utilization for the remote host/client - total, user, system */
 
-    int64_t net_if_util[NUM_NET_STATS];         /* network interface utilization of the test - duration (usec), rx_bytes, rx_packets, tx_bytes, tx_packets */
-    int64_t remote_net_if_util[NUM_NET_STATS];  /* network interface utilization for the remote host/client */
+    iperf_size_t net_if_util[NUM_NET_STATS];         /* network interface utilization of the test - duration (usec), rx_bytes, rx_packets, tx_bytes, tx_packets */
+    iperf_size_t remote_net_if_util[NUM_NET_STATS];  /* network interface utilization for the remote host/client */
 
     int       num_streams;                      /* total streams in the test (-P) */
 
