@@ -397,7 +397,7 @@ const char reportCSV_bw_udp_format[] =
 "%s,%s,%d,%.1f-%.1f,%d,%d,%.3f,%d,%d,%.3f,%d\n";
 
 const char report_net_if[] =
-"Network Summary (bytes/pkts): %s/%s (%lld usec) %lld/%lld rx / %lld/%lld tx, %lls/%lls (%lld usec) %lld/%lld rx / %lld/%lld tx\n";
+"Network Summary (bytes/pkts): %s/%s (%lld usec) %lld/%lld rx / %lld/%lld tx, %s/%s (%lld usec) %lld/%lld rx / %lld/%lld tx\n";
 #endif //WIN32
 #endif //HAVE_QUAD_SUPPORT
 /* -------------------------------------------------------------------
