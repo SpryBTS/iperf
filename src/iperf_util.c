@@ -51,7 +51,11 @@ char *net_stats_label[] = {"duration", "rx_bytes", "rx_packets", "tx_bytes", "tx
 
 #include <fcntl.h>
 #include <math.h>
+#if defined(HAVE_IFADDRS_H)
 #include <ifaddrs.h>
+#else
+#include "ifaddrs.h"
+#endif
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
