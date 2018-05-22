@@ -52,7 +52,7 @@ char *net_stats_label[] = {"duration", "rx_bytes", "rx_packets", "tx_bytes", "tx
 #include <net/if.h>
 #include <netinet/in.h>
 #include <sys/ioctl.h>
-#include <sys/fcntl.h>
+#include <fcntl.h>
 #include <arpa/inet.h>
 #include <math.h>
 
@@ -202,7 +202,7 @@ get_if_name(char *iaddr)
         return NULL;
     }
 
-    printf("DEBUG: Looking for an interface with the IP of %s", iaddr );
+    printf("DEBUG: Looking for an interface with the IP of %s\n", iaddr );
 
     //returns pointer to dynamically allocated list of structs
     iflist = listsave = if_nameindex();
@@ -211,15 +211,17 @@ get_if_name(char *iaddr)
     for(iflist; *(char *)iflist != 0; iflist++){
 
         strncpy(ifreq.ifr_name, iflist->if_name, IF_NAMESIZE);
-	ifreq.ifr_addr.sa_family = AF_INET;
 
-        if(ioctl(sock, SIOCGIFADDR, &ifreq) != 0) continue;
+        if(ioctl(sock, SIOCGIFADDR, &ifreq) != 0) {
+                perror("ioctl");
+                continue;
+        }
 
 	inet_ntop(AF_INET, (void *) &((struct sockaddr_in *)&ifreq.ifr_addr)->sin_addr, laddr, sizeof(laddr));
 
 	mapped_v4_to_regular_v4(laddr);
 
-        printf("DEBUG: Found interface %s / %s", ifreq.ifr_name, laddr );
+        printf("DEBUG: Found interface %s / %s\n", ifreq.ifr_name, laddr );
 
         if (!strcmp(laddr, iaddr)) {
 	    // FOUND!
@@ -267,7 +269,7 @@ net_if_util(int sock_fd, int64_t pnet[NUM_NET_STATS])
         mapped_v4_to_regular_v4(laddr);
 
         ifname = get_if_name(laddr);
-        printf("DEBUG: Matched interface %s", ifname );
+        printf("DEBUG: Matched interface %s\n", ifname );
 
     }
 
