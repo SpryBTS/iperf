@@ -82,7 +82,4 @@ exit 1
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
 
-# Check if ifaddrs.h is available as a system library
-#AC_CHECK_HEADERS([ifaddrs.h])
-
 AC_OUTPUT([Makefile src/Makefile src/version.h examples/Makefile iperf3.spec])

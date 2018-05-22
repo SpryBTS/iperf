@@ -54,13 +54,9 @@ char *net_stats_label[] = {"duration", "rx_bytes", "rx_packets", "tx_bytes", "tx
 #include <arpa/inet.h>
 #include <math.h>
 
-#ifdef HAVE_IFADDRS_H
-#include <ifaddrs.h>
-#else
 #include <net/if.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
-#endif
 
 extern void mapped_v4_to_regular_v4(char *str);
 
@@ -192,58 +188,7 @@ delay(int us)
 }
 #endif
 
-#ifdef HAVE_IFADDRS_H
-
-/* Return the name of the interface that has iaddr IP using getifaddrs */
-char*
-get_if_name(char *laddr)
-{
-
-    char iaddr[INET6_ADDRSTRLEN];
-    char *ifname;
-    struct ifaddrs *ifaddr;
-    struct ifaddrs *ifa;
-
-    (void)getifaddrs(&ifaddr);
-
-    for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
-        memset(iaddr, 0, sizeof(iaddr));
-
-        if ((ifa->ifa_addr != NULL) && (AF_INET == ifa->ifa_addr->sa_family)) {
-            struct sockaddr_in *inaddr = (struct sockaddr_in *)ifa->ifa_addr;
-
-	    if ((inaddr != NULL) && (&(inaddr->sin_addr) != (struct in_addr *)NULL)) {
-                inet_ntop(AF_INET, (void *) &((struct sockaddr_in *) inaddr)->sin_addr, iaddr, sizeof(iaddr));
-                mapped_v4_to_regular_v4(iaddr);
-            }
-        }
-        if ((ifa->ifa_addr != NULL) && (AF_INET6 == ifa->ifa_addr->sa_family)) {
-            struct sockaddr_in6 *inaddr = (struct sockaddr_in6 *)ifa->ifa_addr;
-
-	    if ((inaddr != NULL) && (&(inaddr->sin6_addr) != (struct in6_addr *)NULL)) {
-                inet_ntop(AF_INET6, (void *) &((struct sockaddr_in6 *) inaddr)->sin6_addr, iaddr, sizeof(iaddr));
-                mapped_v4_to_regular_v4(iaddr);
-            }
-        }
-
-        if (ifa->ifa_name && !strcmp(laddr, iaddr)) {
-	    // FOUND!
-	    int ifname_len;
-	    ifname_len = strlen(ifa->ifa_name);
-	    if (ifname_len > 255) ifname_len = 255;
-	    ifname = (char *)malloc(ifname_len+1);
-	    strncpy(ifname, ifa->ifa_name, ifname_len);
-	    ifname[ifname_len] = (char)0;
-        }
-    }
-    freeifaddrs(ifaddr);
-    return ifname;
-
-}
-
-#else
-                  
-/* Return the name of the interface that has iaddr IP using if_nameindex and ioctls */
+/* Return the name of the interface that has iaddr IP using ioctls */
 char*
 get_if_name(char *laddr)
 {
@@ -254,8 +199,6 @@ get_if_name(char *laddr)
     struct ifconf ifc;
     int   i;
     char iaddr[INET6_ADDRSTRLEN];
-
-    printf("DEBUG: Looking for an interface with the IP of %s\n", laddr );
 
     //need a socket for ioctl()
     if( (sock = socket(AF_INET, SOCK_STREAM, 0)) < 0){
@@ -287,7 +230,6 @@ get_if_name(char *laddr)
         }
 
         mapped_v4_to_regular_v4(iaddr);
-        printf("DEBUG: Found interface %s / %s\n", ifr->ifr_name, iaddr );
 
         if (!strcmp(laddr, iaddr)) {
 	    // FOUND!
@@ -308,7 +250,6 @@ get_if_name(char *laddr)
     close(sock);
     return ifname;
 }
-#endif // HAVE_IFADDRS_H
 
 void
 net_if_util(int sock_fd, int64_t pnet[NUM_NET_STATS])
@@ -340,7 +281,6 @@ net_if_util(int sock_fd, int64_t pnet[NUM_NET_STATS])
         mapped_v4_to_regular_v4(laddr);
 
         ifname = get_if_name(laddr);
-        printf("DEBUG: Matched interface %s\n", ifname );
 
     }
 
@@ -419,14 +359,14 @@ net_if_util(int sock_fd, int64_t pnet[NUM_NET_STATS])
 
     /* Cleanup when final stats delivered */
     if ((sock_fd < 0) || (ifname == NULL)) {
-		if (ifname != NULL)
-		{
-		    free(ifname);
-		    ifname = (char *)0;
-		}
-		for (net_pass = 0; net_pass < NUM_NET_STATS; net_pass++) {
-		    baseline[net_pass] = 0;
-		}
+        if (ifname != NULL)
+        {
+            free(ifname);
+            ifname = (char *)0;
+        }
+        for (net_pass = 0; net_pass < NUM_NET_STATS; net_pass++) {
+          baseline[net_pass] = 0;
+        }
     }
 }
 
