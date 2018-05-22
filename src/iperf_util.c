@@ -59,6 +59,7 @@ char *net_stats_label[] = {"duration", "rx_bytes", "rx_packets", "tx_bytes", "tx
 #else
 #include <net/if.h>
 #include <sys/ioctl.h>
+#include <sys/socket.h>
 #endif
 
 extern void mapped_v4_to_regular_v4(char *str);
@@ -242,6 +243,11 @@ get_if_name(char *laddr)
 
 #else
 
+#define	_MY_SIZEOF_ADDR_IFREQ(ifr) \
+	((ifr).ifr_addr.sa_len > sizeof(struct sockaddr) ? \
+	 (sizeof(struct ifreq) - sizeof(struct sockaddr) + \
+	  (ifr).ifr_addr.sa_len) : sizeof(struct ifreq))
+                  
 /* Return the name of the interface that has iaddr IP using if_nameindex and ioctls */
 char*
 get_if_name(char *laddr)
@@ -298,7 +304,7 @@ get_if_name(char *laddr)
 	    ifname[ifname_len] = (char)0;
         }
 
-        ifr = (struct ifreq*)((char*)ifr +_SIZEOF_ADDR_IFREQ(*ifr));
+        ifr = (struct ifreq*)((char*)ifr +_MY_SIZEOF_ADDR_IFREQ(*ifr));
     }
     close(sock);
     return ifname;
