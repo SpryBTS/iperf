@@ -24,7 +24,7 @@
 # file for complete information.
 
 # Initialize the autoconf system for the specified tool, version and mailing list
-AC_INIT(iperf, 3.0.12-UD.33, https://github.com/spry/iperf, iperf, https://github.com/spry/iperf)
+AC_INIT(iperf, 3.0.12-UD.36, https://github.com/spry/iperf, iperf, https://github.com/spry/iperf)
 
 # Specify where the auxiliary files created by configure should go. The config
 # directory is picked so that they don't clutter up more useful directories.
@@ -83,6 +83,6 @@ exit 1
 AC_C_CONST
 
 # Check if ifaddrs.h is available as a system library
-AC_CHECK_HEADERS([ifaddrs.h])
+#AC_CHECK_HEADERS([ifaddrs.h])
 
 AC_OUTPUT([Makefile src/Makefile src/version.h examples/Makefile iperf3.spec])

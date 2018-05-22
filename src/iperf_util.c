@@ -247,10 +247,14 @@ char*
 get_if_name(char *laddr)
 {
     char *ifname = NULL;
-    int sock = 0;
-    struct ifreq ifreq;
-    struct if_nameindex *iflist = NULL, *listsave = NULL;
+    int sock;
+    char buf[4096];
+    struct ifreq *ifr;
+    struct ifconf ifc;
+    int   i;
     char iaddr[INET6_ADDRSTRLEN];
+
+    printf("DEBUG: Looking for an interface with the IP of %s\n", laddr );
 
     //need a socket for ioctl()
     if( (sock = socket(AF_INET, SOCK_STREAM, 0)) < 0){
@@ -258,40 +262,44 @@ get_if_name(char *laddr)
         return NULL;
     }
 
-    printf("DEBUG: Looking for an interface with the IP of %s\n", laddr );
+    memset(&ifc, 0, sizeof(ifc));
+    ifc.ifc_len = sizeof(buf);
+    ifc.ifc_buf = (caddr_t) buf;
 
-    //returns pointer to dynamically allocated list of structs
-    iflist = listsave = if_nameindex();
-
-    //walk thru the array returned and query for each interface's address
-    for(iflist; *(char *)iflist != 0; iflist++){
+    if (ioctl(sock, SIOCGIFCONF, &ifc) < 0) {
+      perror("ioctl");
+      return NULL;
+    }
+    
+    i = 0;
+    ifr = (struct ifreq*)buf;
+    while ((char*)ifr < buf+ifc.ifc_len) {
+        ++i;
         memset(iaddr, 0, sizeof(iaddr));
-
-        strncpy(ifreq.ifr_name, iflist->if_name, IF_NAMESIZE);
-
-        if(ioctl(sock, SIOCGIFADDR, &ifreq) != 0) {
-                perror("ioctl");
-                continue;
+        switch (ifr->ifr_addr.sa_family) {
+            case AF_INET:
+                inet_ntop(ifr->ifr_addr.sa_family, &((struct sockaddr_in*)&ifr->ifr_addr)->sin_addr, iaddr, sizeof(iaddr));
+                break;
+            case AF_INET6:
+                inet_ntop(ifr->ifr_addr.sa_family, &((struct sockaddr_in6*)&ifr->ifr_addr)->sin6_addr, iaddr, sizeof(iaddr));
+                break;
         }
 
-	inet_ntop(AF_INET, (void *) &((struct sockaddr_in *)&ifreq.ifr_addr)->sin_addr, iaddr, sizeof(iaddr));
-
-	mapped_v4_to_regular_v4(iaddr);
-
-        printf("DEBUG: Found interface %s / %s\n", ifreq.ifr_name, iaddr );
+        mapped_v4_to_regular_v4(iaddr);
+        printf("DEBUG: Found interface %s / %s\n", ifr->ifr_name, iaddr );
 
         if (!strcmp(laddr, iaddr)) {
 	    // FOUND!
 	    int ifname_len;
-	    ifname_len = strlen(ifreq.ifr_name);
+	    ifname_len = strlen(ifr->ifr_name);
 	    if (ifname_len > 255) ifname_len = 255;
 	    ifname = (char *)malloc(ifname_len+1);
-	    strncpy(ifname, ifreq.ifr_name, ifname_len);
+	    strncpy(ifname, ifr->ifr_name, ifname_len);
 	    ifname[ifname_len] = (char)0;
         }
+
+        ifr = (struct ifreq*)((char*)ifr +_SIZEOF_ADDR_IFREQ(*ifr));
     }
-    //free the dynamic memory kernel allocated for us
-    if_freenameindex(listsave);
     close(sock);
     return ifname;
 }
