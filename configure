@@ -12374,9 +12374,6 @@ $as_echo "#define const /**/" >>confdefs.h
 fi
 
 
-# Check if ifaddrs.h is available as a system library
-#AC_CHECK_HEADERS([ifaddrs.h])
-
 ac_config_files="$ac_config_files Makefile src/Makefile src/version.h examples/Makefile iperf3.spec"
 
 cat >confcache <<\_ACEOF
