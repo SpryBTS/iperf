@@ -1,3 +1,9 @@
+== iperf 3.0.12-UD 2018-05-22 ==
+
+This release adds network collection. Local traffic byte / packet
+counts are collected and reported if available for the stream
+endpoint.
+
 == iperf 3.0.12 2016-06-08 ==
 
 The release notes for iperf 3.0.12 describe changes, including bug

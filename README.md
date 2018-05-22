@@ -28,18 +28,22 @@ Laboratory.  It is released under a three-clause BSD license.
 
 For more information see: http://software.es.net/iperf
 
-Source code and issue tracker: https://github.com/esnet/iperf
+Source code and issue tracker: https://github.com/SpryBTS/iperf
 
 Obtaining iperf3
 ----------------
 
 Downloads of iperf3 are available at:
 
-    http://downloads.es.net/pub/iperf/
+    https://github.com/SpryBTS/iperf
 
 To check out the most recent code, do:
 
-    git clone https://github.com/esnet/iperf.git
+    git clone https://github.com/SpryBTS/iperf.git
+
+This modified iperf3 (based on 3.0-stable) is built on the shoulders of the
+https://github.com/esnet/iperf software any issues and
+errors are NOT due to ESnet.
 
 Building iperf3
 ---------------
@@ -122,6 +126,10 @@ variables.
 
 Known Issues
 ------------
+
+* Network byte and packet counts will only be collected and
+reported if both the client and server use this modified code and
+both both have the /sys, /proc filesystems available
 
 * UDP performance: Some problems have been noticed with iperf3 on the
 ESnet 100G testbed at high UDP rates (above 10Gbps).  The symptom is

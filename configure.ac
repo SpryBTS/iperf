@@ -24,7 +24,7 @@
 # file for complete information.
 
 # Initialize the autoconf system for the specified tool, version and mailing list
-AC_INIT(iperf, 3.0.12, https://github.com/esnet/iperf, iperf, http://software.es.net/iperf/)
+AC_INIT(iperf, 3.0.12-UD.33, https://github.com/spry/iperf, iperf, https://github.com/spry/iperf)
 
 # Specify where the auxiliary files created by configure should go. The config
 # directory is picked so that they don't clutter up more useful directories.
@@ -46,7 +46,6 @@ AC_PROG_RANLIB
 AC_PROG_LN_S
 AC_PROG_LIBTOOL
 
-
 # Sets a conditional makefile variable so that certain Makefile tasks will be
 # performed only on linux (currently, add -luuid to LD_FLAGS)
 AM_CONDITIONAL(LINUX, [case $host_os in linux*) true;; *) false;; esac]) 
@@ -58,7 +57,6 @@ fi
 
 # Checks for header files.
 AC_HEADER_STDC
-
 
 # Check for systems which need -lsocket and -lnsl
 #AX_LIB_SOCKET_NSL
@@ -83,8 +81,5 @@ exit 1
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
-
-# Check if ifaddrs.h is available as a system library
-AC_CHECK_HEADERS([ifaddrs.h])
 
 AC_OUTPUT([Makefile src/Makefile src/version.h examples/Makefile iperf3.spec])
