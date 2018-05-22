@@ -302,7 +302,7 @@ get_if_name(char *laddr)
 #ifdef _SIZEOF_ADDR_IFREQ
         ifr = (struct ifreq*)((char*)ifr +_SIZEOF_ADDR_IFREQ(*ifr));
 #else
-        ifr = (struct ifreq*)((char*)ifr + sizeof(struct ifreq)));
+        ifr = (struct ifreq*)((char*)ifr + sizeof(struct ifreq));
 #endif
     }
     close(sock);
