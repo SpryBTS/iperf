@@ -49,12 +49,17 @@
 #define NUM_NET_STATS 5
 char *net_stats_label[] = {"duration", "rx_bytes", "rx_packets", "tx_bytes", "tx_packets"}; // duration must be first
 
-#include <net/if.h>
 #include <netinet/in.h>
-#include <sys/ioctl.h>
 #include <fcntl.h>
 #include <arpa/inet.h>
 #include <math.h>
+
+#ifdef HAVE_IFADDRS_H
+#include <ifaddrs.h>
+#else
+#include <net/if.h>
+#include <sys/ioctl.h>
+#endif
 
 extern void mapped_v4_to_regular_v4(char *str);
 
@@ -186,15 +191,66 @@ delay(int us)
 }
 #endif
 
-/* Return the name of the interface that has iaddr IP */
+#ifdef HAVE_IFADDRS_H
+
+/* Return the name of the interface that has iaddr IP using getifaddrs */
 char*
-get_if_name(char *iaddr)
+get_if_name(char *laddr)
+{
+
+    char iaddr[INET6_ADDRSTRLEN];
+    char *ifname;
+    struct ifaddrs *ifaddr;
+    struct ifaddrs *ifa;
+
+    (void)getifaddrs(&ifaddr);
+
+    for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
+        memset(iaddr, 0, sizeof(iaddr));
+
+        if ((ifa->ifa_addr != NULL) && (AF_INET == ifa->ifa_addr->sa_family)) {
+            struct sockaddr_in *inaddr = (struct sockaddr_in *)ifa->ifa_addr;
+
+	    if ((inaddr != NULL) && (&(inaddr->sin_addr) != (struct in_addr *)NULL)) {
+                inet_ntop(AF_INET, (void *) &((struct sockaddr_in *) inaddr)->sin_addr, iaddr, sizeof(iaddr));
+                mapped_v4_to_regular_v4(iaddr);
+            }
+        }
+        if ((ifa->ifa_addr != NULL) && (AF_INET6 == ifa->ifa_addr->sa_family)) {
+            struct sockaddr_in6 *inaddr = (struct sockaddr_in6 *)ifa->ifa_addr;
+
+	    if ((inaddr != NULL) && (&(inaddr->sin6_addr) != (struct in6_addr *)NULL)) {
+                inet_ntop(AF_INET6, (void *) &((struct sockaddr_in6 *) inaddr)->sin6_addr, iaddr, sizeof(iaddr));
+                mapped_v4_to_regular_v4(iaddr);
+            }
+        }
+
+        if (ifa->ifa_name && !strcmp(laddr, iaddr)) {
+	    // FOUND!
+	    int ifname_len;
+	    ifname_len = strlen(ifa->ifa_name);
+	    if (ifname_len > 255) ifname_len = 255;
+	    ifname = (char *)malloc(ifname_len+1);
+	    strncpy(ifname, ifa->ifa_name, ifname_len);
+	    ifname[ifname_len] = (char)0;
+        }
+    }
+    freeifaddrs(ifaddr);
+    return ifname;
+
+}
+
+#else
+
+/* Return the name of the interface that has iaddr IP using if_nameindex and ioctls */
+char*
+get_if_name(char *laddr)
 {
     char *ifname = NULL;
     int sock = 0;
     struct ifreq ifreq;
     struct if_nameindex *iflist = NULL, *listsave = NULL;
-    char laddr[INET6_ADDRSTRLEN];
+    char iaddr[INET6_ADDRSTRLEN];
 
     //need a socket for ioctl()
     if( (sock = socket(AF_INET, SOCK_STREAM, 0)) < 0){
@@ -202,13 +258,14 @@ get_if_name(char *iaddr)
         return NULL;
     }
 
-    printf("DEBUG: Looking for an interface with the IP of %s\n", iaddr );
+    printf("DEBUG: Looking for an interface with the IP of %s\n", laddr );
 
     //returns pointer to dynamically allocated list of structs
     iflist = listsave = if_nameindex();
 
     //walk thru the array returned and query for each interface's address
     for(iflist; *(char *)iflist != 0; iflist++){
+        memset(iaddr, 0, sizeof(iaddr));
 
         strncpy(ifreq.ifr_name, iflist->if_name, IF_NAMESIZE);
 
@@ -217,11 +274,11 @@ get_if_name(char *iaddr)
                 continue;
         }
 
-	inet_ntop(AF_INET, (void *) &((struct sockaddr_in *)&ifreq.ifr_addr)->sin_addr, laddr, sizeof(laddr));
+	inet_ntop(AF_INET, (void *) &((struct sockaddr_in *)&ifreq.ifr_addr)->sin_addr, iaddr, sizeof(iaddr));
 
-	mapped_v4_to_regular_v4(laddr);
+	mapped_v4_to_regular_v4(iaddr);
 
-        printf("DEBUG: Found interface %s / %s\n", ifreq.ifr_name, laddr );
+        printf("DEBUG: Found interface %s / %s\n", ifreq.ifr_name, iaddr );
 
         if (!strcmp(laddr, iaddr)) {
 	    // FOUND!
@@ -238,6 +295,7 @@ get_if_name(char *iaddr)
     close(sock);
     return ifname;
 }
+#endif // HAVE_IFADDRS_H
 
 void
 net_if_util(int sock_fd, int64_t pnet[NUM_NET_STATS])
@@ -280,70 +338,70 @@ net_if_util(int sock_fd, int64_t pnet[NUM_NET_STATS])
      */
 
     if (ifname != NULL) {
-		int i;
-		int net_fd;
+	int i;
+	int net_fd;
 
-		int net_fullpathsize = 256;
-		char net_fullpath[net_fullpathsize];
+	int net_fullpathsize = 256;
+	char net_fullpath[net_fullpathsize];
 
-		int net_buflen;
-		int net_bufsize = 32;
-		char net_buf[net_bufsize];
+	int net_buflen;
+	int net_bufsize = 32;
+	char net_buf[net_bufsize];
 
-		int64_t snapshot[NUM_NET_STATS];
-		int64_t ss;
+	int64_t snapshot[NUM_NET_STATS];
+	int64_t ss;
 
-		/* Get snapshot of current state */
-		gettimeofday(&t_now, NULL);
-		snapshot[0] = t_now.tv_sec * 1000000.0 + t_now.tv_usec;
-		for (net_pass = 1; net_pass < NUM_NET_STATS; net_pass++) {
-		    snapshot[net_pass] = 0;
-		    if ((snapshot[0] - baseline[0]) > 1000000L) {
-			/* Only first time through, or more than 1s later */
-			/* Allows multiple streams without redundant interface interrogation */
-			net_buflen = 0;
-			memset(net_fullpath, 0, net_fullpathsize);
-			snprintf(net_fullpath, net_fullpathsize, "/sys/class/net/%s/statistics/%s", ifname, net_stats_label[net_pass]);
-			if ((net_fd = open(net_fullpath, O_RDONLY)) >= 0) {
-			    net_buflen = read(net_fd, net_buf, net_bufsize);
-			    close(net_fd);
-			}
-			if (net_buflen > 0) {
-			    ss = 0;
-			    for (i = 0; (i < net_buflen) && (net_buf[i] >= '0') && (net_buf[i] <= '9'); i++) {
-				ss = ss * 10 + net_buf[i] - '0';
-			    }
-			    snapshot[net_pass] = ss;
+	/* Get snapshot of current state */
+	gettimeofday(&t_now, NULL);
+	snapshot[0] = t_now.tv_sec * 1000000.0 + t_now.tv_usec;
+	for (net_pass = 1; net_pass < NUM_NET_STATS; net_pass++) {
+	    snapshot[net_pass] = 0;
+	    if ((snapshot[0] - baseline[0]) > 1000000L) {
+		/* Only first time through, or more than 1s later */
+		/* Allows multiple streams without redundant interface interrogation */
+		net_buflen = 0;
+		memset(net_fullpath, 0, net_fullpathsize);
+		snprintf(net_fullpath, net_fullpathsize, "/sys/class/net/%s/statistics/%s", ifname, net_stats_label[net_pass]);
+		if ((net_fd = open(net_fullpath, O_RDONLY)) >= 0) {
+		    net_buflen = read(net_fd, net_buf, net_bufsize);
+		    close(net_fd);
+		}
+		if (net_buflen > 0) {
+		    ss = 0;
+		    for (i = 0; (i < net_buflen) && (net_buf[i] >= '0') && (net_buf[i] <= '9'); i++) {
+			ss = ss * 10 + net_buf[i] - '0';
+		    }
+		    snapshot[net_pass] = ss;
+		}
+	    }
+	}
+
+	if (baseline[0] <= 0L) { /* Timestamp */
+	    /* Lock away start baseline first time through */
+	    for (net_pass = 0; net_pass < NUM_NET_STATS; net_pass++) {
+                pnet[net_pass] = 0L;
+                baseline[net_pass] = snapshot[net_pass];
+	    }
+	} else {
+	    if ((snapshot[0] - baseline[0]) > 1000000L) {
+		/* Update deltas if this is more than 1s after baseline */
+		for (net_pass = 0; net_pass < NUM_NET_STATS; net_pass++) {
+		    if (snapshot[net_pass] >= baseline[net_pass]) {
+                        pnet[net_pass] = snapshot[net_pass] - baseline[net_pass];
+		    } else {
+			/* Counter rollover estimation */
+			int64_t net_rollover;
+			for (net_rollover = pow(2,31); net_rollover >= baseline[net_pass]; net_rollover += net_rollover)
+			    ;
+			if ((net_rollover / 2) > baseline[net_pass]) {
+			    pnet[net_pass] = 0; /* Ignore unreliable (reset? overlapped?) counter */
+			} else {
+			    pnet[net_pass] = net_rollover - baseline[net_pass] + snapshot[net_pass];
 			}
 		    }
 		}
-
-		if (baseline[0] <= 0L) { /* Timestamp */
-		    /* Lock away start baseline first time through */
-		    for (net_pass = 0; net_pass < NUM_NET_STATS; net_pass++) {
-                        pnet[net_pass] = 0L;
-                        baseline[net_pass] = snapshot[net_pass];
-		    }
-		} else {
-		    if ((snapshot[0] - baseline[0]) > 1000000L) {
-			/* Update deltas if this is more than 1s after baseline */
-			for (net_pass = 0; net_pass < NUM_NET_STATS; net_pass++) {
-			    if (snapshot[net_pass] >= baseline[net_pass]) {
-                                pnet[net_pass] = snapshot[net_pass] - baseline[net_pass];
-			    } else {
-				/* Counter rollover estimation */
-				int64_t net_rollover;
-				for (net_rollover = pow(2,31); net_rollover >= baseline[net_pass]; net_rollover += net_rollover)
-				    ;
-				if ((net_rollover / 2) > baseline[net_pass]) {
-				    pnet[net_pass] = 0; /* Ignore unreliable (reset? overlapped?) counter */
-				} else {
-				    pnet[net_pass] = net_rollover - baseline[net_pass] + snapshot[net_pass];
-				}
-			    }
-			}
-		    }
-		}
+	    }
+	}
     }
 
     /* Cleanup when final stats delivered */
